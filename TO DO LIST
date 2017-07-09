@@ -1,0 +1,21 @@
+#### TO DO LIST
+
+1) sort out folder structure
+2) have initial run using randomGLM package
+3) test run glmnet and understand hyper-parameter tuning 
+4) investigate if randomGLM package can be changed to utilise glmnet
+5) ELSE: building features:
+  - bootstrapping
+  - nfeatures in bag
+  - parallelise glm fitting
+  - cross validation of glm (internal or single run)
+  - aggregation process
+  - feature ranking
+  - extracting linear predictors
+  - thinning?
+
+6) compress entire process into a library
+  
+6) R&D:
+  - how can we implement splines?
+  - 
