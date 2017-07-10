@@ -1,3 +1,4 @@
+# trace(percent, edit = T)
 # trace(AvsE, edit = T)
 # trace(AvsEPred, edit = T)
 # trace(CalculateGains, edit = T)
@@ -8,6 +9,9 @@
 # trace(view_tree, edit = T)
 
 ### Code for common utility functions
+percent <- function(x, digits = 2, format = "f", ...) {
+  paste0(formatC(100 * x, format = format, digits = digits, ...), "%")
+}
 
 AvsE <- function(indata, 
                  target_name, 
@@ -353,7 +357,7 @@ CalculateGains <- function(indata,
                        (target.pred.cumsum +target.pred.cumsum.lag)/2) - 0.5
   
   ## Percentage of theoretical max gains
-  pct_max_gains = model_gains/max_gains
+  pct_max_gains = percent(model_gains/max_gains)
   
   ## Generate plot if requested
   if (plot) {
@@ -365,7 +369,7 @@ CalculateGains <- function(indata,
     par(mar = c(4,4,2,2))
     plot(c(0, 1), c(0, 1), type = "l", 
          xlab = "Cumulative proportion of population",
-         main = "Gains chart", ylab = "Gains", col = "dark green", lwd = 2)
+         main = paste("Gains chart for", pred_name, sep = " "), ylab = "Gains", col = "dark green", lwd = 2)
     points(c(0, perc.pred), c(0, target.pred.cumsum), type = "l", col = "blue",
            lwd = 2)
     points(c(0, perc), c(0, target.cumsum), type = "l", col = "red",

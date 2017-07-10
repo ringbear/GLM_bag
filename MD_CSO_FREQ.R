@@ -20,10 +20,11 @@ source("./Utility Code/supporting_functions_source.R")
 set.seed(123)
 
 ### Set parameters
-model.choice <- 'FIRE_CSO_SIZE'
+model.choice <- 'MD_CSO_FREQ'
 var.list <- c('company', 'channel', 'yearsInsured', 'stateRisk', 'ContStockOtherSI', 
-              'suncorp_household_score', 'target')
-cat.var.list <- c('company', 'channel', 'stateRisk')
+              'suncorp_household_score', 'policyPremiscnt', 'occ_cso_maldam1', 'locality', 
+              'building_maldamage_freq1', 'target')
+cat.var.list <- c('company', 'channel', 'stateRisk', 'occ_cso_maldam1', 'locality', 'building_maldamage_freq1')
 train.prop <- 0.8
 
 
@@ -35,21 +36,23 @@ data.in.h <- read.csv(paste(data.dir, 'data_h.csv', sep = ''), na.strings=c(''),
 emb.score <- read.csv(paste(data.dir, model.choice, '_predval.csv', sep = ''), na.strings=c(''), stringsAsFactors = T)
 endoftrain.indx <- nrow(data.in.m)
 data.in <- rbind(data.in.m, data.in.h)
-
+rm(data.in.m, data.in.h)
 ## process data
 # Clean out extra columns
-target.ind <- grep("target", colnames(data.in))
-data.in <- data.in[1:target.ind] # With the assumption that target is the last column
+# target.ind <- grep("target", colnames(data.in))
+# data.in <- data.in[1:target.ind] # With the assumption that target is the last column
 
 # Feature cleaning
-var.drop.list <- c("datatype", "AREA")
-data.in <- data.in[, !(names(data.in) %in% var.drop.list)]
+# var.drop.list <- c("datatype", "AREA")
+# data.in <- data.in[, !(names(data.in) %in% var.drop.list)]
 
 data.in$company <- as.factor(mapvalues(data.in[["company"]], 
                                from = c("3","6","12","13","17"), 
                                to   = c("VERO","AAMI","Resilium","GIO","GIO")))
+data.in <- as.data.table(data.in)
+data.subset <- as.data.frame(data.in[,..var.list])
 
-data.subset <- data.in[, var.list]
+rm(data.in)
 
 # ensure all categorical variables are factors                
 data.subset <- data.subset %>% 
@@ -64,15 +67,19 @@ for (var in cat.var.list) {
   encode.list[[indx]] <- eval(parse(text = var.encoding))
 }
 
+# Remove initial categorical variables and replace with one-hot encoded variables
 data.subset <- data.subset[, !(names(data.subset) %in% cat.var.list)]
-
 data.full <- data.frame(data.subset, encode.list)
+rm(encode.list)
 
-
-
-target.indx <- grep("target", colnames(data.full))
+for (var in cat.var.list) {
+  var.encoding <- paste(var, ".encoding", sep = "")
+  rm(list = c(var.encoding))
+  print(paste('removing', var.encoding, sep = " "))
+}
 
 ## split data into train, CV and test 
+target.indx <- grep("target", colnames(data.full))
 xTrain <- data.full[1:endoftrain.indx,-target.indx][1:floor(train.prop*endoftrain.indx),]
 yTrain <- data.full[1:endoftrain.indx, target.indx][1:floor(train.prop*endoftrain.indx)]
 
@@ -82,10 +89,15 @@ yCV <- data.full[1:endoftrain.indx, target.indx][-(1:floor(train.prop*endoftrain
 xTest <- data.full[-(1:endoftrain.indx),-target.indx]
 yTest <- data.full[-(1:endoftrain.indx), target.indx]
 
+rm(data.full, data.subset)
+
 nbag <- seq(25, 150, 25)
 model.list <- list()
 CV.list <- list()
 CV <- data.frame(cbind(xCV, yCV))
+
+# check memory usage before fitting multiple models
+sort( sapply(ls(),function(x){object.size(get(x))})) 
 
 for (bag.cnt in nbag) {
   paste("now fitting model with number of bags =", bag.cnt, sep = " ")  
